@@ -15,20 +15,23 @@ $IPT -t nat --flush
 $IPT --delete-chain
 
 # Set the default policies
-$IPT -P INPUT DROP
-$IPT -P OUTPUT ACCEPT
-$IPT -P FORWARD DROP
+$IPT -P INPUT DROP   # Drop anything coming in 
+$IPT -P OUTPUT ACCEPT   # Allow aything going out
+$IPT -P FORWARD DROP   # Drop any forwarding
 
-# Allow Loopback interface 
+# Allow all traffic on the loopback interface 
 $IPT -A INPUT -i lo -j ACCEPT 
 $IPT -A OUTPUT -o lo -j ACCEPT 
 
-# NATing
-$IPT -A FORWARD -i ${WAN} -o ${LAN} -m state --state NEW,RELATED,ESTABLISHED -j ACCEPT
+## NATing
+# Forward all traffic from the wan to the lan 
+$IPT -A FORWARD -i ${WAN} -o ${LAN} -j ACCEPT
+# Forward all traffic from the lan to the wan 
 $IPT -A FORWARD -i ${LAN} -o ${WAN} -j ACCEPT
+# Translate internal IPs to the IP of the router on the external network
 $IPT -t nat -A POSTROUTING -o ${WAN} -j SNAT --to-source 192.168.0.51
 
-# Allow traffic from the LAN
+# Allow all traffic from the LAN
 $IPT -A INPUT -i ${LAN} -j ACCEPT
 
 # Allow traffic from the WAN that is an established connection
@@ -39,13 +42,10 @@ $IPT -A INPUT -i ${WAN} -m state --state RELATED,ESTABLISHED -j ACCEPT
 #
 # Allow SSH 
 $IPT -A INPUT -p tcp --dport ssh -j ACCEPT
-
 # Allow DNS 
 $IPT -A INPUT -p udp --dport domain -j ACCEPT
-
 # Allow DHCP
 $IPT -A INPUT -p udp --dport bootps -j ACCEPT
-
 # Allow HTTP and HTTPS
 $IPT -A INPUT -p tcp --dport http -j ACCEPT
 $IPT -A INPUT -p tcp --dport https -j ACCEPT
@@ -72,8 +72,8 @@ $IPT -t nat -A PREROUTING -p tcp --dport https -i ${WAN} -j DNAT --to 10.10.10.1
 #$IPT -t raw -A PREROUTING --destination 10.0.0.1 -p tcp --dport 25 -j TRACE
 
 
-### Flush settings after 300 seconds if i lock myself out 
-### Uncomment/comment this as needed
+## Flush settings after 300 seconds if i lock myself out 
+## Uncomment/comment this as needed
 #sleep 300
 #$IPT --flush 
 
